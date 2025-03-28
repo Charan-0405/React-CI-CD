@@ -1,0 +1,21 @@
+name : "Simple React CI/Workflow"
+on :
+    push:
+        branches:
+            - master
+jobs:
+    build-and-test:
+        runs-on: windows-latest
+        steps:
+            - name: "SET UP NODEJS"
+              uses: actions/setup-node@v4
+              with:
+                node-version: '21'
+            - name: "check node version"
+              run : node --version
+            - name : "clone repository"
+              uses : actions/checkout@v2
+            - name: "Install Dependencies"
+              run : npm install
+
+    
