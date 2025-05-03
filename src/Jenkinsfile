@@ -1,6 +1,20 @@
 pipeline {
     agent any
+    options {
+        skipDefaultCheckout(true) // Skip the default checkout
+    }
     stages {
+        stage ('Clean up code') {
+            steps {
+                cleanWs()
+            }   
+        }
+
+        stage('Checkout using SCM') {
+            steps {
+                checkout scm // Checkout the code
+            }
+        }
         stage('Build') {
             agent {
                 docker {
@@ -11,10 +25,6 @@ pipeline {
             }
             steps {
                 sh '''
-                    ls -l
-                    node --version
-                    npm --version
-                    npm install
                     npm run build
                     ls -l
                 '''
