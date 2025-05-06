@@ -7,11 +7,11 @@ pipeline {
     }
 
     options {
-        skipDefaultCheckout(true)
+        skipDefaultCheckout(true) // Skip the default checkout
     }
-
     stages {
-        stage('Clean up code') {
+
+        stage ('Clean up code') {
             steps {
                 cleanWs()
             }   
@@ -19,59 +19,72 @@ pipeline {
 
         stage('Checkout using SCM') {
             steps {
-                checkout scm
+                checkout scm // Checkout the code
+            }
+        }
+
+        stage('Take approval') {
+            steps {
+                timeout(time: 1, unit: 'MINUTES') {
+                    input message: 'Do you want to proceed?', ok: 'Proceed'
+                }
             }
         }
 
         stage('Build') {
             agent {
                 docker {
-                    image 'node:22.11.0' // ⬅️ full image for better dependency support
+                    image 'node:22.11.0-alpine3.20'
                     args '-u root'
-                    reuseNode true
+                    reuseNode true // Reuse the node for the next stages
                 }
             }
+
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
+
                     sh '''
+                        ls -l
+                        node --version
+                        npm --version
                         npm install
                         npm run build
                         ls -l
                     '''
-                }
+                
             }
         }
 
         stage('Test') {
             agent {
                 docker {
-                    image 'node:22.11.0'
+                    image 'node:22.11.0-alpine3.20'
                     args '-u root'
-                    reuseNode true
+                    reuseNode true // Reuse the node for the next stages
                 }
             }
+
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    sh 'npm run test'
-                }
+                sh '''
+                    npm run test
+                '''
             }
         }
 
         stage('Deploy') {
             agent {
                 docker {
-                    image 'node:22.11.0'
+                    image 'node:22.11.0-alpine3.20'
                     args '-u root'
-                    reuseNode true
+                    reuseNode true // Reuse the node for the next stages
                 }
             }
+
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    sh '''
-                        npm install -g vercel
-                        vercel --prod --token=$VERCEL_TOKEN --confirm --name=cicdproject
-                    '''
-                }
+                sh '''
+                    npm install -g vercel
+                    echo $MY_VAR
+                    vercel --prod --token=$VERCEL_TOKEN --confirm --name=cicdproject
+                '''
             }
         }
     }
