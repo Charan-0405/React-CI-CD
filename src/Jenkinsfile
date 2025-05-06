@@ -1,15 +1,17 @@
 pipeline {
     agent any
-     environment {
+
+    environment {
         NODE_ENV = 'test'
         VERCEL_TOKEN = credentials('VERCEL_TOKEN')
     }
+
     options {
-        skipDefaultCheckout(true) // Skip the default checkout
+        skipDefaultCheckout(true)
     }
-   
+
     stages {
-        stage ('Clean up code') {
+        stage('Clean up code') {
             steps {
                 cleanWs()
             }   
@@ -17,56 +19,60 @@ pipeline {
 
         stage('Checkout using SCM') {
             steps {
-                checkout scm // Checkout the code
+                checkout scm
             }
         }
 
-        
         stage('Build') {
             agent {
                 docker {
-                    image 'node:22.11.0-alpine3.20'
+                    image 'node:22.11.0' // ⬅️ full image for better dependency support
                     args '-u root'
                     reuseNode true
                 }
             }
             steps {
-                sh '''
-                    npm install
-                    npm run build
-                    ls -l
-                '''
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh '''
+                        npm ci || npm install
+                        npm run build
+                        ls -l
+                    '''
+                }
             }
         }
+
         stage('Test') {
             agent {
                 docker {
-                    image 'node:22.11.0-alpine3.20'
+                    image 'node:22.11.0'
                     args '-u root'
                     reuseNode true
                 }
             }
             steps {
-                sh '''
-                    npm run test
-                '''
+                timeout(time: 5, unit: 'MINUTES') {
+                    sh 'npm run test'
+                }
             }
         }
-        stage('deploy'){
+
+        stage('Deploy') {
             agent {
                 docker {
-                    image 'node:22.11.0-alpine3.20'
+                    image 'node:22.11.0'
                     args '-u root'
                     reuseNode true
                 }
             }
-            steps{
-                sh '''
-                npm install -g vercel
-                vercel --prod --token=$VERCEL_TOKEN --confirm --name=cicdproject
-                '''
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    sh '''
+                        npm install -g vercel
+                        vercel --prod --token=$VERCEL_TOKEN --confirm --name=cicdproject
+                    '''
+                }
             }
-    
         }
     }
 }
