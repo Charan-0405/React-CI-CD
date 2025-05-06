@@ -1,5 +1,9 @@
 pipeline {
     agent any
+     environment {
+        NODE_ENV = 'test'
+        VERCEL_TOKEN = credentials('VERCEL_TOKEN')
+    }
    
     stages {
         
@@ -44,6 +48,7 @@ pipeline {
             steps{
                 sh '''
                 npm install -g vercel
+                vercel --prod --token=$VERCEL_TOKEN --confirm --name=cicdproject
                 '''
             }
     
